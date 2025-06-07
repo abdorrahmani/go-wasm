@@ -80,6 +80,81 @@ func TestValueWrapper(t *testing.T) {
 				return nil
 			},
 		},
+		{
+			name: "Property existence check",
+			setup: func() *Value {
+				obj := Global().Call("Object")
+				obj.Set("test", "value")
+				return obj
+			},
+			validate: func(v *Value) error {
+				if !v.Exists("test") {
+					return fmt.Errorf("property 'test' should exist")
+				}
+				if v.Exists("nonexistent") {
+					return fmt.Errorf("property 'nonexistent' should not exist")
+				}
+				return nil
+			},
+		},
+		{
+			name: "Length method",
+			setup: func() *Value {
+				return Global().Get("Array").Call("from", []interface{}{1, 2, 3, 4, 5})
+			},
+			validate: func(v *Value) error {
+				length, err := v.Length()
+				if err != nil {
+					return fmt.Errorf("error getting length: %v", err)
+				}
+				if length != 5 {
+					return fmt.Errorf("expected length 5, got %d", length)
+				}
+				return nil
+			},
+		},
+		{
+			name: "JSON conversion",
+			setup: func() *Value {
+				obj := Global().Call("Object")
+				obj.Set("name", "test")
+				obj.Set("value", 42)
+				obj.Set("nested", map[string]interface{}{
+					"key": "value",
+				})
+				return obj
+			},
+			validate: func(v *Value) error {
+				result, err := v.ToJSON()
+				if err != nil {
+					return fmt.Errorf("error converting to JSON: %v", err)
+				}
+
+				// Type assert to map
+				m, ok := result.(map[string]interface{})
+				if !ok {
+					return fmt.Errorf("expected map result, got %T", result)
+				}
+
+				// Check values
+				if m["name"] != "test" {
+					return fmt.Errorf("expected name 'test', got %v", m["name"])
+				}
+				if m["value"] != float64(42) {
+					return fmt.Errorf("expected value 42, got %v", m["value"])
+				}
+
+				nested, ok := m["nested"].(map[string]interface{})
+				if !ok {
+					return fmt.Errorf("expected nested map, got %T", m["nested"])
+				}
+				if nested["key"] != "value" {
+					return fmt.Errorf("expected nested key 'value', got %v", nested["key"])
+				}
+
+				return nil
+			},
+		},
 	}
 
 	for _, tt := range tests {

@@ -122,3 +122,45 @@ func (v *Value) Array() ([]*Value, error) {
 func (v *Value) Raw() js.Value {
 	return v.value
 }
+
+// Exists checks if a property exists on the JavaScript value
+func (v *Value) Exists(key string) bool {
+	return !v.Get(key).IsUndefined()
+}
+
+// Length returns the length of array-like values
+func (v *Value) Length() (int, error) {
+	if v.Type() != js.TypeObject {
+		return 0, fmt.Errorf("value is not an object")
+	}
+	return v.value.Length(), nil
+}
+
+// ToJSON converts the value to a Go interface{} using JSON
+func (v *Value) ToJSON() (interface{}, error) {
+	if v.Type() != js.TypeObject {
+		return nil, fmt.Errorf("value is not an object")
+	}
+
+	// Use JSON.stringify and JSON.parse to convert to Go value
+	jsonStr, err := Global().Get("JSON").Call("stringify", v.value).String()
+	if err != nil {
+		return nil, fmt.Errorf("error stringifying value: %v", err)
+	}
+	var result interface{}
+	err = Global().Get("JSON").Call("parse", jsonStr).Unmarshal(&result)
+	return result, err
+}
+
+// Unmarshal converts the value to the provided Go type
+func (v *Value) Unmarshal(target interface{}) error {
+	if v.Type() != js.TypeObject {
+		return fmt.Errorf("value is not an object")
+	}
+
+	jsonStr, err := Global().Get("JSON").Call("stringify", v.value).String()
+	if err != nil {
+		return fmt.Errorf("error stringifying value: %v", err)
+	}
+	return Global().Get("JSON").Call("parse", jsonStr).Unmarshal(target)
+}
