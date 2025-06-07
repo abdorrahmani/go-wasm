@@ -155,6 +155,62 @@ func TestValueWrapper(t *testing.T) {
 				return nil
 			},
 		},
+		{
+			name: "Must and Try methods",
+			setup: func() *Value {
+				obj := Global().Call("Object")
+				obj.Set("string", "test")
+				obj.Set("number", 42)
+				obj.Set("boolean", true)
+				obj.Set("array", []interface{}{1, 2, 3})
+				return obj
+			},
+			validate: func(v *Value) error {
+				// Test Must methods
+				if v.Get("string").MustString() != "test" {
+					return fmt.Errorf("MustString failed")
+				}
+				if v.Get("number").MustInt() != 42 {
+					return fmt.Errorf("MustInt failed")
+				}
+				if !v.Get("boolean").MustBool() {
+					return fmt.Errorf("MustBool failed")
+				}
+				if v.Get("array").MustLength() != 3 {
+					return fmt.Errorf("MustLength failed")
+				}
+
+				// Test Try methods with valid values
+				if v.Get("string").TryString("fallback") != "test" {
+					return fmt.Errorf("TryString failed with valid value")
+				}
+				if v.Get("number").TryInt(0) != 42 {
+					return fmt.Errorf("TryInt failed with valid value")
+				}
+				if !v.Get("boolean").TryBool(false) {
+					return fmt.Errorf("TryBool failed with valid value")
+				}
+				if v.Get("array").TryLength(0) != 3 {
+					return fmt.Errorf("TryLength failed with valid value")
+				}
+
+				// Test Try methods with invalid values
+				if v.Get("nonexistent").TryString("fallback") != "fallback" {
+					return fmt.Errorf("TryString failed with invalid value")
+				}
+				if v.Get("nonexistent").TryInt(0) != 0 {
+					return fmt.Errorf("TryInt failed with invalid value")
+				}
+				if v.Get("nonexistent").TryBool(false) != false {
+					return fmt.Errorf("TryBool failed with invalid value")
+				}
+				if v.Get("nonexistent").TryLength(0) != 0 {
+					return fmt.Errorf("TryLength failed with invalid value")
+				}
+
+				return nil
+			},
+		},
 	}
 
 	for _, tt := range tests {

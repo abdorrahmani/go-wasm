@@ -4,6 +4,7 @@
 package js
 
 import (
+	"encoding/json"
 	"fmt"
 	"syscall/js"
 )
@@ -150,14 +151,18 @@ func (v *Value) ToJSON() (interface{}, error) {
 		return nil, fmt.Errorf("value is not an object")
 	}
 
-	// Use JSON.stringify and JSON.parse to convert to Go value
+	// Use JSON.stringify to convert to string
 	jsonStr, err := Global().Get("JSON").Call("stringify", v.value).String()
 	if err != nil {
 		return nil, fmt.Errorf("error stringifying value: %v", err)
 	}
+
+	// Parse the JSON string into a Go value
 	var result interface{}
-	err = Global().Get("JSON").Call("parse", jsonStr).Unmarshal(&result)
-	return result, err
+	if err := json.Unmarshal([]byte(jsonStr), &result); err != nil {
+		return nil, fmt.Errorf("error parsing JSON: %v", err)
+	}
+	return result, nil
 }
 
 // Unmarshal converts the value to the provided Go type
@@ -166,9 +171,156 @@ func (v *Value) Unmarshal(target interface{}) error {
 		return fmt.Errorf("value is not an object")
 	}
 
+	// Use JSON.stringify to convert to string
 	jsonStr, err := Global().Get("JSON").Call("stringify", v.value).String()
 	if err != nil {
 		return fmt.Errorf("error stringifying value: %v", err)
 	}
-	return Global().Get("JSON").Call("parse", jsonStr).Unmarshal(target)
+
+	// Parse the JSON string into the target type
+	return json.Unmarshal([]byte(jsonStr), target)
+}
+
+// MustBool returns the value as a bool, panicking on error
+func (v *Value) MustBool() bool {
+	b, err := v.Bool()
+	if err != nil {
+		panic(fmt.Sprintf("MustBool failed: %v", err))
+	}
+	return b
+}
+
+// TryBool returns the value as a bool, with a fallback value on error
+func (v *Value) TryBool(fallback bool) bool {
+	b, err := v.Bool()
+	if err != nil {
+		return fallback
+	}
+	return b
+}
+
+// MustInt returns the value as an int, panicking on error
+func (v *Value) MustInt() int {
+	i, err := v.Int()
+	if err != nil {
+		panic(fmt.Sprintf("MustInt failed: %v", err))
+	}
+	return i
+}
+
+// TryInt returns the value as an int, with a fallback value on error
+func (v *Value) TryInt(fallback int) int {
+	i, err := v.Int()
+	if err != nil {
+		return fallback
+	}
+	return i
+}
+
+// MustFloat returns the value as a float64, panicking on error
+func (v *Value) MustFloat() float64 {
+	f, err := v.Float()
+	if err != nil {
+		panic(fmt.Sprintf("MustFloat failed: %v", err))
+	}
+	return f
+}
+
+// TryFloat returns the value as a float64, with a fallback value on error
+func (v *Value) TryFloat(fallback float64) float64 {
+	f, err := v.Float()
+	if err != nil {
+		return fallback
+	}
+	return f
+}
+
+// MustString returns the value as a string, panicking on error
+func (v *Value) MustString() string {
+	s, err := v.String()
+	if err != nil {
+		panic(fmt.Sprintf("MustString failed: %v", err))
+	}
+	return s
+}
+
+// TryString returns the value as a string, with a fallback value on error
+func (v *Value) TryString(fallback string) string {
+	s, err := v.String()
+	if err != nil {
+		return fallback
+	}
+	return s
+}
+
+// MustObject returns the value as a map[string]interface{}, panicking on error
+func (v *Value) MustObject() map[string]interface{} {
+	obj, err := v.Object()
+	if err != nil {
+		panic(fmt.Sprintf("MustObject failed: %v", err))
+	}
+	return obj
+}
+
+// TryObject returns the value as a map[string]interface{}, with a fallback value on error
+func (v *Value) TryObject(fallback map[string]interface{}) map[string]interface{} {
+	obj, err := v.Object()
+	if err != nil {
+		return fallback
+	}
+	return obj
+}
+
+// MustArray returns the value as a slice of Values, panicking on error
+func (v *Value) MustArray() []*Value {
+	arr, err := v.Array()
+	if err != nil {
+		panic(fmt.Sprintf("MustArray failed: %v", err))
+	}
+	return arr
+}
+
+// TryArray returns the value as a slice of Values, with a fallback value on error
+func (v *Value) TryArray(fallback []*Value) []*Value {
+	arr, err := v.Array()
+	if err != nil {
+		return fallback
+	}
+	return arr
+}
+
+// MustLength returns the length of array-like values, panicking on error
+func (v *Value) MustLength() int {
+	length, err := v.Length()
+	if err != nil {
+		panic(fmt.Sprintf("MustLength failed: %v", err))
+	}
+	return length
+}
+
+// TryLength returns the length of array-like values, with a fallback value on error
+func (v *Value) TryLength(fallback int) int {
+	length, err := v.Length()
+	if err != nil {
+		return fallback
+	}
+	return length
+}
+
+// MustToJSON converts the value to a Go interface{}, panicking on error
+func (v *Value) MustToJSON() interface{} {
+	result, err := v.ToJSON()
+	if err != nil {
+		panic(fmt.Sprintf("MustToJSON failed: %v", err))
+	}
+	return result
+}
+
+// TryToJSON converts the value to a Go interface{}, with a fallback value on error
+func (v *Value) TryToJSON(fallback interface{}) interface{} {
+	result, err := v.ToJSON()
+	if err != nil {
+		return fallback
+	}
+	return result
 }
