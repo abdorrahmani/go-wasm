@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Go WebAssembly Example</title>
+</head>
+<body>
+    <h1>Go WebAssembly Example</h1>
+    <div id="output"></div>
+    <script>
+        // Load the WebAssembly module
+        const go = new Go();
+        WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject)
+            .then((result) => {
+                go.run(result.instance);
+            })
+            .catch((err) => {
+                console.error("Error loading WebAssembly module:", err);
+            });
+    </script>
+</body>
+</html> 
