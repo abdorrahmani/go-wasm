@@ -92,10 +92,18 @@ func (v *Value) Object() (map[string]interface{}, error) {
 	}
 
 	obj := make(map[string]interface{})
-	keys := v.value.Get("Object").Call("keys", v.value)
+	keys := Global().Get("Object").Call("keys", v.value)
 
-	for i := 0; i < keys.Length(); i++ {
-		key := keys.Index(i).String()
+	length, err := keys.Length()
+	if err != nil {
+		return nil, fmt.Errorf("error getting keys length: %v", err)
+	}
+
+	for i := 0; i < length; i++ {
+		key, err := keys.Get(fmt.Sprintf("%d", i)).String()
+		if err != nil {
+			return nil, fmt.Errorf("error getting key at index %d: %v", i, err)
+		}
 		obj[key] = v.Get(key).value
 	}
 
