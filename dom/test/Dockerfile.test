@@ -1,0 +1,29 @@
+FROM golang:1.21-alpine
+
+WORKDIR /app
+
+# Copy the entire module
+COPY ../../ /app/
+
+# Initialize the module if go.mod doesn't exist
+RUN if [ ! -f go.mod ]; then \
+    go mod init github.com/abdorrahmani/go-wasm && \
+    go mod tidy; \
+    fi
+
+# Build the test binary for WebAssembly
+RUN GOOS=js GOARCH=wasm go test -c -o test.wasm ./dom/test
+
+# Get wasm_exec.js
+RUN cp /usr/local/go/misc/wasm/wasm_exec.js .
+
+# Create the HTML file
+RUN echo '<!DOCTYPE html><html><head><title>DOM WASM Tests</title><style>body{font-family:monospace;margin:20px;}#output{white-space:pre-wrap;background:#f5f5f5;padding:10px;border-radius:4px;}#test-container{margin-top:20px;padding:20px;border:1px solid #ccc;}</style></head><body><h1>DOM WebAssembly Test Results</h1><div id="output">Running tests...</div><div id="test-container"></div><script src="wasm_exec.js"></script><script>const go = new Go();const output = document.getElementById("output");const originalConsoleLog = console.log;const originalConsoleError = console.error;console.log = function() {const args = Array.from(arguments);output.textContent += args.join(" ") + "\n";originalConsoleLog.apply(console, arguments);};console.error = function() {const args = Array.from(arguments);output.textContent += "ERROR: " + args.join(" ") + "\n";originalConsoleError.apply(console, arguments);};WebAssembly.instantiateStreaming(fetch("test.wasm"), go.importObject).then(result => {go.run(result.instance);}).catch(err => {output.textContent += "Error loading WebAssembly: " + err + "\n";});</script></body></html>' > test.html
+
+# Create a simple Go HTTP server
+RUN echo 'package main; import ("net/http"; "log"); func main() { http.Handle("/", http.FileServer(http.Dir("."))); log.Fatal(http.ListenAndServe(":8080", nil)) }' > server.go && \
+    go build -o server server.go
+
+EXPOSE 8080
+
+CMD ["./server"] 
