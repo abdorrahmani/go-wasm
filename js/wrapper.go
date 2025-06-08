@@ -324,3 +324,15 @@ func (v *Value) TryToJSON(fallback interface{}) interface{} {
 	}
 	return result
 }
+
+// NewCallback creates a new JavaScript callback function
+func NewCallback(fn func([]*Value)) js.Func {
+	return js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		wrappedArgs := make([]*Value, len(args))
+		for i, arg := range args {
+			wrappedArgs[i] = &Value{value: arg}
+		}
+		fn(wrappedArgs)
+		return nil
+	})
+}

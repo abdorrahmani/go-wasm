@@ -211,6 +211,36 @@ func TestValueWrapper(t *testing.T) {
 				return nil
 			},
 		},
+		{
+			name: "Callback handling",
+			setup: func() *Value {
+				obj := Global().Call("Object")
+				var callbackCalled bool
+				callback := NewCallback(func(args []*Value) {
+					callbackCalled = true
+					if len(args) != 2 {
+						t.Errorf("expected 2 arguments, got %d", len(args))
+					}
+					if args[0].MustString() != "test" {
+						t.Errorf("expected first arg 'test', got %s", args[0].MustString())
+					}
+					if args[1].MustInt() != 42 {
+						t.Errorf("expected second arg 42, got %d", args[1].MustInt())
+					}
+				})
+				obj.Set("callback", callback)
+				obj.Call("callback", "test", 42)
+				obj.Set("callbackCalled", callbackCalled)
+				return obj
+			},
+			validate: func(v *Value) error {
+				called := v.Get("callbackCalled").MustBool()
+				if !called {
+					return fmt.Errorf("callback was not called")
+				}
+				return nil
+			},
+		},
 	}
 
 	for _, tt := range tests {
