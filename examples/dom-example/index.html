@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Go WebAssembly DOM Example</title>
+    <style>
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .box {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .button {
+            padding: 8px 16px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        .highlight {
+            background-color: #ffeb3b;
+        }
+        #error {
+            color: red;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid red;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Go WebAssembly DOM Example</h1>
+        <div id="error"></div>
+        <div id="output" class="box">
+            <p>Initial content</p>
+        </div>
+        <div id="controls" class="box">
+            <button id="addElement" class="button">Add Element</button>
+            <button id="changeStyle" class="button">Change Style</button>
+            <button id="addEvent" class="button">Add Event</button>
+        </div>
+        <div id="eventOutput" class="box">
+            <p>Event output will appear here</p>
+        </div>
+    </div>
+    <script src="wasm_exec.js"></script>
+    <script>
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            console.error(message);
+        }
+
+        // Verify wasm_exec.js is loaded
+        if (typeof Go === 'undefined') {
+            showError('Error: wasm_exec.js not loaded properly');
+        } else {
+            console.log('wasm_exec.js loaded successfully');
+        }
+
+        // Load the WebAssembly module
+        const go = new Go();
+        WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject)
+            .then((result) => {
+                console.log('WebAssembly module loaded successfully');
+                go.run(result.instance);
+            })
+            .catch((err) => {
+                showError('Error loading WebAssembly module: ' + err);
+                console.error('Full error:', err);
+            });
+    </script>
+</body>
+</html> 
